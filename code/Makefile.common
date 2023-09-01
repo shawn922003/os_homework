@@ -25,15 +25,30 @@
 # All rights reserved.  See copyright.h for copyright notice and limitation 
 # of liability and disclaimer of warranty provisions.
 
-CFLAGS = -g -Wall $(INCPATH) $(DEFINES) $(HOST) -DCHANGED
-LDFLAGS =
+UNAME_P := $(shell uname -p)
+ifeq ($(UNAME_P),x86_64)		# Host is x86_64
+	CFLAGS = -g -Wall $(INCPATH) $(DEFINES) $(HOST) -DCHANGED -m32
+	LDFLAGS = -m32
 
-# These definitions may change as the software is updated.
-# Some of them are also system dependent
-CPP=/lib/cpp
-CC = g++ -Wno-deprecated
-LD = g++ -Wno-deprecated
-AS = as
+	# These definitions may change as the software is updated.
+	# Some of them are also system dependent
+	CPP=/lib/cpp
+	CC = g++ -Wno-deprecated
+	LD = g++ -Wno-deprecated
+	AS = as --32
+else ifneq ($(filter %86,$(UNAME_P)),)	# Host is i386
+	CFLAGS = -g -Wall $(INCPATH) $(DEFINES) $(HOST) -DCHANGED
+	LDFLAGS =
+
+	# These definitions may change as the software is updated.
+	# Some of them are also system dependent
+	CPP=/lib/cpp
+	CC = g++ -Wno-deprecated
+	LD = g++ -Wno-deprecated
+	AS = as
+else
+	$(error $(UNAME_P) currently unsupported!)
+endif
 
 PROGRAM = nachos
 

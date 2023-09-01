@@ -10,9 +10,18 @@
 # of liability and disclaimer of warranty provisions.
 
 include ../Makefile.dep
-CC=gcc
-CFLAGS=-I../lib -I../threads $(HOST)
-LD=gcc
+UNAME_P := $(shell uname -p)
+ifeq ($(UNAME_P),x86_64)		# Host is X86_64
+	CC=gcc
+	CFLAGS=-I../lib -I../threads $(HOST) -m32
+	LD=gcc -m32
+else ifneq ($(filter %86,$(UNAME_P)),)	# Host is i386
+	CC=gcc
+	CFLAGS=-I../lib -I../threads $(HOST)
+	LD=gcc
+else
+        $(error $(UNAME_P) currently unsupported!)
+endif
 
 all: coff2noff 
 #$(DISASM)
