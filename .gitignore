@@ -15,3 +15,6 @@ coff2noff
 #/code/test/*.c
 #/code/test/*
 #/code/test/halt
+
+# Temp file
+*.swp
