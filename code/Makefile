@@ -19,8 +19,11 @@ all:
 
 # don't delete executables in "test" in case there is no cross-compiler
 clean:
-	/bin/csh -c "rm -f */{core,nachos,DISK,*.o,swtch.s} test/{*.coff} bin/{coff2flat,coff2noff,disasm} "
+	-/bin/csh -c "rm -f */{core,nachos,DISK,*.o,swtch.s} test/{*.coff} bin/{coff2flat,coff2noff,disasm} "
 
+# delete executables in "test"
+distclean: clean
+	find test -type f ! -name "script" ! -name "*.c" ! -name "*.s" ! -name "Makefile" -exec rm -f {} \;
 print:
 	/bin/csh -c "$(LPR) Makefile* */Makefile"
 	/bin/csh -c "$(LPR) threads/*.h threads/*.cc threads/*.s"
