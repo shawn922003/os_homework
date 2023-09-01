@@ -4,6 +4,7 @@
 # Object File 
 *.o
 #*.s
+swtch.s
 *.coff
 
 # Binary 
