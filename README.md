@@ -167,8 +167,9 @@ If you're in the `test` directory:
 # Debug Flag
 
 In `NachOS/code/lib/debug.h` There is pre-defined debugging flags
+- debug.h:20
 
-```cpp=20
+```cpp
 // The pre-defined debugging flags are:
 
 const char dbgAll = '+';        // turn on all debug messages
@@ -183,8 +184,9 @@ const char dbgNet = 'n';         // network emulation (NETWORK)
 ```
 
 For example in `NachOS/code/threads/main.cc`
+- main.cc:76
 
-```cpp=76
+```cpp
 DEBUG(dbgThread, "Entering main");
 ```
 
@@ -213,16 +215,18 @@ To illustrate the process of adding, for example, `test1` to NachOS, follow thes
 
 1. Place `test1.c` source file into `NachOS/code/test/` directory 
 2. Modify the `NachOS/code/test/Makefile` file to add a `test1` make target, as shown below:
+  - Makefile:67
   
-  ```makefile=67
+  ```makefile
   test1: test1.o start.o
       $(LD) $(LDFLAGS) start.o test1.o -o test1.coff
       ../bin/coff2noff test1.coff test1
   ```
   
 3. Ensure that you add the `test1` make target at the end of the `all` make target, as shown below:
+  - Makefile:36
   
-  ```makefile=36
+  ```makefile
   all: halt shell matmult sort test1
   ```
   
