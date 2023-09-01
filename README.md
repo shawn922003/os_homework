@@ -33,7 +33,7 @@ As of now, this project has been tested and confirmed to work on the latest LTS 
 Enable i386 architecture first
 
 ```shell
-$ sudo dpkg --add-architectures i386 
+$ sudo dpkg --add-architecture i386 
 ```
 
 Preform system upgrade
@@ -45,7 +45,7 @@ $ sudo apt update; sudo apt dist-upgrade
 Install the dependency (csh/git/compiler)
 
 ```shell
-$ sudo apt install csh git build-essential gcc-multilib g++multilib gdb gdb-multiarch
+$ sudo apt install csh git build-essential gcc-multilib g++-multilib gdb gdb-multiarch
 ```
 
 ### For 32-bit Ubuntu Linux
