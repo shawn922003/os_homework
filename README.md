@@ -45,7 +45,7 @@ $ sudo apt update; sudo apt dist-upgrade
 Install the dependency (csh/git/compiler)
 
 ```shell
-$ sudo apt install csh git build-essential gcc-multilib g++-multilib gdb gdb-multiarch
+$ sudo apt install csh ed git build-essential gcc-multilib g++-multilib gdb gdb-multiarch
 ```
 
 ### For 32-bit Ubuntu Linux
@@ -59,7 +59,7 @@ $ sudo apt update; sudo apt dist-upgrade
 Install the dependency (csh/git/compiler)
 
 ```shell
-$ sudo apt install csh git build-essential gdb
+$ sudo apt install csh ed git build-essential gdb
 ```
 
 ### Download Project
