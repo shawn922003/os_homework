@@ -23,26 +23,26 @@ UserProgKernel::UserProgKernel(int argc, char **argv)
     debugUserProg = FALSE;
 	execfileNum=0;
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-s") == 0) {
-	    debugUserProg = TRUE;
-	}
-	else if (strcmp(argv[i], "-e") == 0) {
-		execfile[++execfileNum]= argv[++i];
-	}
-    	 else if (strcmp(argv[i], "-u") == 0) {
-		cout << "===========The following argument is defined in userkernel.cc" << endl;
-		cout << "Partial usage: nachos [-s]\n";
-		cout << "Partial usage: nachos [-u]" << endl;
-		cout << "Partial usage: nachos [-e] filename" << endl;
-	}
-	else if (strcmp(argv[i], "-h") == 0) {
-		cout << "argument 's' is for debugging. Machine status  will be printed " << endl;
-		cout << "argument 'e' is for execting file." << endl;
-		cout << "atgument 'u' will print all argument usage." << endl;
-		cout << "For example:" << endl;
-		cout << "	./nachos -s : Print machine status during the machine is on." << endl;
-		cout << "	./nachos -e file1 -e file2 : executing file1 and file2."  << endl;
-	}
+			if (strcmp(argv[i], "-s") == 0) {
+			debugUserProg = TRUE;
+		}
+		else if (strcmp(argv[i], "-e") == 0) {
+			execfile[++execfileNum]= argv[i + 1];
+		}
+			else if (strcmp(argv[i], "-u") == 0) {
+			cout << "===========The following argument is defined in userkernel.cc" << endl;
+			cout << "Partial usage: nachos [-s]\n";
+			cout << "Partial usage: nachos [-u]" << endl;
+			cout << "Partial usage: nachos [-e] filename" << endl;
+		}
+		else if (strcmp(argv[i], "-h") == 0) {
+			cout << "argument 's' is for debugging. Machine status  will be printed " << endl;
+			cout << "argument 'e' is for execting file." << endl;
+			cout << "atgument 'u' will print all argument usage." << endl;
+			cout << "For example:" << endl;
+			cout << "	./nachos -s : Print machine status during the machine is on." << endl;
+			cout << "	./nachos -e file1 -e file2 : executing file1 and file2."  << endl;
+		}
     }
 }
 

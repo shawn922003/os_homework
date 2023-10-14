@@ -1,7 +1,8 @@
 #include "syscall.h"
+
 main()
-	{
-		int	n;
-		for (n=9;n>5;n--)
-			PrintInt(OSAdd(n,n+1));
-	}
+        {
+                int     n;
+                for (n=10000;n<=10010;n++)
+                        PrintInt(n);
+        }
