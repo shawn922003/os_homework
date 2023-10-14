@@ -18,6 +18,7 @@ coff2noff
 
 # Temp file
 *.swp
+*~
 
 # VSCode related
 .vscode
