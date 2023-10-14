@@ -36,14 +36,18 @@ ThreadedKernel::ThreadedKernel(int argc, char **argv)
 	    i++;
         } else if (strcmp(argv[i], "-u") == 0) {
             cout << "Partial usage: nachos [-rs randomSeed]\n";
-	} else if(strcmp(argv[i], "RR") == 0) {
-            type = RR;
-        } else if (strcmp(argv[i], "FCFS") == 0) {
-            type = FIFO;
-        } else if (strcmp(argv[i], "PRIORITY") == 0) {
-            type = Priority;
-        } else if (strcmp(argv[i], "SJF") == 0) {
-            type = SJF;
+	    } else if(strcmp(argv[i], "-sche") == 0) {
+            if (!(i + 1 < argc)){
+                cout << "Partial usage: nachos [-sche Schedluer Type]\n";
+            } else if (strcmp(argv[i + 1], "RR") == 0){
+                type = RR;
+            } else if (strcmp(argv[i + 1], "FCFS") == 0) {
+                type = FIFO;
+            } else if (strcmp(argv[i + 1], "PRIORITY") == 0) {
+                type = Priority;
+            } else if (strcmp(argv[i + 1], "SJF") == 0) {
+                type = SJF;
+            }
         }
     }
 }
