@@ -1,8 +1,8 @@
-// kernel.cc 
+// kernel.cc
 //	Initialization and cleanup routines for the Nachos kernel.
 //
 // Copyright (c) 1992-1996 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation 
+// All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
 
 #include "copyright.h"
@@ -18,34 +18,49 @@
 
 //----------------------------------------------------------------------
 // ThreadedKernel::ThreadedKernel
-// 	Interpret command line arguments in order to determine flags 
-//	for the initialization (see also comments in main.cc)  
+// 	Interpret command line arguments in order to determine flags
+//	for the initialization (see also comments in main.cc)
 //----------------------------------------------------------------------
 
 ThreadedKernel::ThreadedKernel(int argc, char **argv)
 {
-    randomSlice = FALSE; 
+    randomSlice = FALSE;
     type = RR;
 
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-rs") == 0) {
- 	    ASSERT(i + 1 < argc);
-	    RandomInit(atoi(argv[i + 1]));// initialize pseudo-random
-					// number generator
-	    randomSlice = TRUE;
-	    i++;
-        } else if (strcmp(argv[i], "-u") == 0) {
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-rs") == 0)
+        {
+            ASSERT(i + 1 < argc);
+            RandomInit(atoi(argv[i + 1])); // initialize pseudo-random
+                                           // number generator
+            randomSlice = TRUE;
+            i++;
+        }
+        else if (strcmp(argv[i], "-u") == 0)
+        {
             cout << "Partial usage: nachos [-rs randomSeed]\n";
-	    } else if(strcmp(argv[i], "-sche") == 0) {
-            if (!(i + 1 < argc)){
+        }
+        else if (strcmp(argv[i], "-sche") == 0)
+        {
+            if (!(i + 1 < argc))
+            {
                 cout << "Partial usage: nachos [-sche Schedluer Type]\n";
-            } else if (strcmp(argv[i + 1], "RR") == 0){
+            }
+            else if (strcmp(argv[i + 1], "RR") == 0)
+            {
                 type = RR;
-            } else if (strcmp(argv[i + 1], "FCFS") == 0) {
+            }
+            else if (strcmp(argv[i + 1], "FCFS") == 0)
+            {
                 type = FIFO;
-            } else if (strcmp(argv[i + 1], "PRIORITY") == 0) {
+            }
+            else if (strcmp(argv[i + 1], "PRIORITY") == 0)
+            {
                 type = Priority;
-            } else if (strcmp(argv[i + 1], "SJF") == 0) {
+            }
+            else if (strcmp(argv[i + 1], "SJF") == 0)
+            {
                 type = SJF;
             }
         }
@@ -54,23 +69,22 @@ ThreadedKernel::ThreadedKernel(int argc, char **argv)
 
 //----------------------------------------------------------------------
 // ThreadedKernel::Initialize
-// 	Initialize Nachos global data structures.  Separate from the 
+// 	Initialize Nachos global data structures.  Separate from the
 //	constructor because some of these refer to earlier initialized
 //	data via the "kernel" global variable.
 //----------------------------------------------------------------------
 
-void
-ThreadedKernel::Initialize()
+void ThreadedKernel::Initialize()
 {
-    stats = new Statistics();		// collect statistics
-    interrupt = new Interrupt;		// start up interrupt handling
-    scheduler = new Scheduler(type);	// initialize the ready queue
-    alarm = new Alarm(randomSlice);	// start up time slicing
+    stats = new Statistics();        // collect statistics
+    interrupt = new Interrupt;       // start up interrupt handling
+    scheduler = new Scheduler(type); // initialize the ready queue
+    alarm = new Alarm(randomSlice);  // start up time slicing
 
     // We didn't explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a Thread
-    // object to save its state. 
-    currentThread = new Thread("main");		
+    // object to save its state.
+    currentThread = new Thread("main");
     currentThread->setStatus(RUNNING);
 
     interrupt->Enable();
@@ -87,7 +101,7 @@ ThreadedKernel::~ThreadedKernel()
     delete scheduler;
     delete interrupt;
     delete stats;
-    
+
     Exit(0);
 }
 
@@ -98,15 +112,14 @@ ThreadedKernel::~ThreadedKernel()
 //	start a user program to print the login prompt.
 //----------------------------------------------------------------------
 
-void
-ThreadedKernel::Run()
+void ThreadedKernel::Run()
 {
     // NOTE: if the procedure "main" returns, then the program "nachos"
     // will exit (as any other normal program would).  But there may be
-    // other threads on the ready list (started in SelfTest).  
-    // We switch to those threads by saying that the "main" thread 
+    // other threads on the ready list (started in SelfTest).
+    // We switch to those threads by saying that the "main" thread
     // is finished, preventing it from returning.
-    currentThread->Finish();	
+    currentThread->Finish();
     // not reached
 }
 
@@ -115,25 +128,25 @@ ThreadedKernel::Run()
 //      Test whether this module is working.
 //----------------------------------------------------------------------
 
-void
-ThreadedKernel::SelfTest() {
-   Semaphore *semaphore;
-   SynchList<int> *synchList;
-   
-   LibSelfTest();		// test library routines
-   
-   currentThread->SelfTest();	// test thread switching
-   
-   				// test semaphore operation
-   semaphore = new Semaphore("test", 0);
-   semaphore->SelfTest();
-   delete semaphore;
-   
-   				// test locks, condition variables
-				// using synchronized lists
-   synchList = new SynchList<int>;
-   synchList->SelfTest(9);
-   delete synchList;
+void ThreadedKernel::SelfTest()
+{
+    Semaphore *semaphore;
+    SynchList<int> *synchList;
 
-   ElevatorSelfTest();
+    LibSelfTest(); // test library routines
+
+    currentThread->SelfTest(); // test thread switching
+
+    // test semaphore operation
+    semaphore = new Semaphore("test", 0);
+    semaphore->SelfTest();
+    delete semaphore;
+
+    // test locks, condition variables
+    // using synchronized lists
+    synchList = new SynchList<int>;
+    synchList->SelfTest(9);
+    delete synchList;
+
+    ElevatorSelfTest();
 }
