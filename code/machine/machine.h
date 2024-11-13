@@ -21,6 +21,7 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
+
 #include "copyright.h"
 #include "utility.h"
 #include "translate.h"
@@ -133,6 +134,7 @@ public:
                            // "read-only" to Nachos kernel code
 
     TranslationEntry *pageTable;
+
     unsigned int pageTableSize;
     bool ReadMem(int addr, int size, int *value);
 
@@ -196,5 +198,11 @@ unsigned int WordToHost(unsigned int word);
 unsigned short ShortToHost(unsigned short shortword);
 unsigned int WordToMachine(unsigned int word);
 unsigned short ShortToMachine(unsigned short shortword);
+
+
+
+
+
+
 
 #endif // MACHINE_H

@@ -14,7 +14,6 @@
 // Copyright (c) 1992-1996 The Regents of the University of California.
 // All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
-
 #include "copyright.h"
 #include "main.h"
 #include "addrspace.h"
@@ -96,108 +95,84 @@ AddrSpace::~AddrSpace()
 
 bool AddrSpace::Load(char *fileName)
 {
-    // 開啟要載入的執行檔
     OpenFile *executable = kernel->fileSystem->Open(fileName);
-    NoffHeader noffH;  // NoffHeader 用於儲存執行檔的檔頭，包含程式段的資訊
+    NoffHeader noffH;
     unsigned int size;
 
-    // 如果無法開啟檔案，則回傳失敗
     if (executable == NULL)
     {
         cerr << "Unable to open file " << fileName << "\n";
         return FALSE;
     }
-    
-    // 讀取執行檔的檔頭至 noffH 結構中
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
-    
-    // 檢查 noffMagic 欄位以確保該檔案為合法的 Nachos 可執行檔格式
     if ((noffH.noffMagic != NOFFMAGIC) &&
         (WordToHost(noffH.noffMagic) == NOFFMAGIC))
-        SwapHeader(&noffH);  // 如果檔頭的字節順序不對，則調整為當前主機的順序
+        SwapHeader(&noffH);
     ASSERT(noffH.noffMagic == NOFFMAGIC);
 
-    // 計算地址空間的大小
-    // 計算方式為程式碼區段 + 已初始化資料區段 + 未初始化資料區段 + 用戶堆疊大小
-    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + UserStackSize;
-
-    // 將 size 向上取整為頁面數
+    // how big is address space?
+    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + UserStackSize; // we need to increase the size
+                                                                                          // to leave room for the stack
     numPages = divRoundUp(size, PageSize);
     //	cout << "number of pages of " << fileName<< " is "<<numPages<<endl;
     size = numPages * PageSize;
 
     numPages = divRoundUp(size, PageSize);
-
-    // 建立頁面表並分配物理頁框給虛擬頁面
-    for (unsigned int i = 0, j = 0; i < numPages; i++)
-    {
-        pageTable[i].virtualPage = i;  // 設定虛擬頁面號
-        while (j < NumPhysPages && AddrSpace::usedPhyPage[j] == true) // 找到空閒的物理頁框
-            j++;
-        AddrSpace::usedPhyPage[j] = true;  // 標記該物理頁框為已使用
-        pageTable[i].physicalPage = j;  // 設定物理頁框號
-        pageTable[i].valid = true;
-        pageTable[i].use = false;
-        pageTable[i].dirty = false;
-        pageTable[i].readOnly = false;
-    }
-
     size = numPages * PageSize;
 
-    ASSERT(numPages <= NumPhysPages); // 確認記憶體足夠以避免過大的程式
+    ASSERT(numPages <= NumPhysPages); // check we're not trying
+                                      // to run anything too big --
+                                      // at least until we have
+                                      // virtual memory
 
     DEBUG(dbgAddr, "Initializing address space: " << numPages << ", " << size);
 
-    // 複製程式碼和資料區段到主記憶體
-    // 若程式碼區段的大小大於 0，則載入程式碼段
+    // then, copy in the code and data segments into memory
+    char *tempBuffer = new char[noffH.code.size + noffH.initData.size + noffH.uninitData.size];
+
+    // Copy code segment to tempBuffer
     if (noffH.code.size > 0)
-    {
-        DEBUG(dbgAddr, "Initializing code segment.");
-        DEBUG(dbgAddr, noffH.code.virtualAddr << ", " << noffH.code.size);
-        
-        // 將程式碼段從檔案載入至對應的物理記憶體位置
-        // 1. `pageTable[noffH.code.virtualAddr / PageSize].physicalPage`：
-        //    將虛擬位址轉換成對應的頁數（即 `noffH.code.virtualAddr / PageSize`），
-        //    再透過頁表找到對應的physical frame number。
-        // 2. `pageTable[noffH.code.virtualAddr / PageSize].physicalPage * PageSize`：
-        //    取得該物理頁框的起始位址。
-        // 3. `(noffH.code.virtualAddr % PageSize)`：
-        //    將虛擬位址中的頁內偏移量加入計算，以確保載入到正確的記憶體位址。
-        // 4. `noffH.code.size`：
-        //    表示要載入的程式碼段的大小。
-        // 5. `noffH.code.inFileAddr`：
-        //    此為檔案內的偏移量，用於定位程式碼段在執行檔中的位置。
-        executable->ReadAt(
-            &(kernel->machine->mainMemory[pageTable[noffH.code.virtualAddr / PageSize].physicalPage * PageSize + (noffH.code.virtualAddr % PageSize)]),
-            noffH.code.size, noffH.code.inFileAddr);
-    }
+        executable->ReadAt(tempBuffer, noffH.code.size, noffH.code.inFileAddr);
 
-    // 若已初始化資料區段的大小大於 0，則載入已初始化資料段
+    // Copy initialized data segment to tempBuffer after code segment
     if (noffH.initData.size > 0)
-    {
-        DEBUG(dbgAddr, "Initializing data segment.");
-        DEBUG(dbgAddr, noffH.initData.virtualAddr << ", " << noffH.initData.size);
-        
-        // 將已初始化資料段從檔案載入至對應的物理記憶體位置
-        // 1. `pageTable[noffH.initData.virtualAddr / PageSize].physicalPage`：
-        //    將資料段的虛擬位址轉換為對應的頁數，
-        //    再透過頁表找到對應的物理頁框號。
-        // 2. `pageTable[noffH.initData.virtualAddr / PageSize].physicalPage * PageSize`：
-        //    計算該物理頁框的起始位址。
-        // 3. `(noffH.initData.virtualAddr % PageSize)`：
-        //    取得頁內偏移量，以確保載入到正確的記憶體位址。
-        // 4. `noffH.initData.size`：
-        //    已初始化資料段的大小，表示要載入的資料量。
-        // 5. `noffH.initData.inFileAddr`：
-        //    此為檔案內的偏移量，用於定位資料段在執行檔中的位置。
-        executable->ReadAt(
-            &(kernel->machine->mainMemory[pageTable[noffH.initData.virtualAddr / PageSize].physicalPage * PageSize + (noffH.initData.virtualAddr % PageSize)]),
-            noffH.initData.size, noffH.initData.inFileAddr);
+        executable->ReadAt(tempBuffer + noffH.code.size, noffH.initData.size, noffH.initData.inFileAddr);
+
+    unsigned int offset = 0;
+
+    // Load each page from tempBuffer to memory or disk
+    for (unsigned int page = 0; page < numPages; page++) {
+        int j = 0;
+        while (j < NumPhysPages && AddrSpace::usedPhyPage[j] == true)
+            j++;
+
+        if (j < NumPhysPages) {
+            // Load page into main memory
+            memcpy(&(kernel->machine->mainMemory[j * PageSize]), tempBuffer + offset, PageSize);
+
+            AddrSpace::usedPhyPage[j] = true;
+            pageTable[page].physicalPage = j;
+            pageTable[page].valid = true;
+            pageTable[page].diskPage = -1;
+        } else {
+            // Load page into swap disk
+            int diskSector = kernel->synchDisk->numUsedSectors++;
+            kernel->synchDisk->WriteSector(diskSector, tempBuffer + offset);
+
+            pageTable[page].diskPage = diskSector;
+            pageTable[page].valid = false;
+        }
+
+        offset += PageSize;
+        pageTable[page].use = false;
+        pageTable[page].dirty = false;
+        pageTable[page].readOnly = false;
     }
 
+    delete[] tempBuffer; // Free temporary buffer
 
-    delete executable; // 關閉檔案
-    return TRUE;       // 成功載入
+    delete executable; // close file
+    return TRUE;       // success
 }
 
 

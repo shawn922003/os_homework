@@ -34,6 +34,7 @@ SynchDisk::SynchDisk(char* name)
     disk = new Disk(name, this);
 }
 
+
 //----------------------------------------------------------------------
 // SynchDisk::~SynchDisk
 // 	De-allocate data structures needed for the synchronous disk

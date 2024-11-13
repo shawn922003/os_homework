@@ -33,8 +33,11 @@ const int STACK_FENCEPOST = 0xdedbeef;
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
 
+int Thread::nextThreadID = 0;
+
 Thread::Thread(char* threadName)
 {
+    threadID = nextThreadID++;
     name = threadName;
     stackTop = NULL;
     stack = NULL;

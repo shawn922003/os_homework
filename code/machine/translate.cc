@@ -184,84 +184,106 @@ bool Machine::WriteMem(int addr, int size, int value)
 // 	"writing" -- if TRUE, check the "read-only" bit in the TLB
 //----------------------------------------------------------------------
 
-ExceptionType
-Machine::Translate(int virtAddr, int *physAddr, int size, bool writing)
+// Machine::Translate 函數
+// 此函數將虛擬位址轉換為物理位址，並處理不同的例外狀況
+// 輸入參數：
+// - int virtAddr：虛擬位址
+// - int *physAddr：轉換後的物理位址指標
+// - int size：存取的大小（1、2 或 4 bytes）
+// - bool writing：是否為寫操作
+ExceptionType Machine::Translate(int virtAddr, int *physAddr, int size, bool writing)
 {
     int i;
     unsigned int vpn, offset;
     TranslationEntry *entry;
     unsigned int pageFrame;
 
+    // 記錄此次轉換的操作類型（讀取或寫入）
     DEBUG(dbgAddr, "\tTranslate " << virtAddr << (writing ? " , write" : " , read"));
 
-    // check for alignment errors
+    // 檢查位址對齊錯誤
+    // 如果 size 是 4 bytes，虛擬位址應以 4-byte 對齊（最後兩位必須是 00），
+    // 如果 size 是 2 bytes，虛擬位址應以 2-byte 對齊（最後一位必須是 0）。
     if (((size == 4) && (virtAddr & 0x3)) || ((size == 2) && (virtAddr & 0x1)))
     {
         DEBUG(dbgAddr, "Alignment problem at " << virtAddr << ", size " << size);
-        return AddressErrorException;
+        return AddressErrorException;  // 返回位址錯誤例外
     }
 
-    // we must have either a TLB or a page table, but not both!
-    ASSERT(tlb == NULL || pageTable == NULL);
-    ASSERT(tlb != NULL || pageTable != NULL);
+    // 系統必須有 TLB 或 Page Table，但不能同時擁有兩者。
+    ASSERT(tlb == NULL || pageTable == NULL);  // 若條件不成立會觸發 ASSERT
+    ASSERT(tlb != NULL || pageTable != NULL);  // 必須至少有 TLB 或 Page Table 其中之一
 
-    // calculate the virtual page number, and offset within the page,
-    // from the virtual address
+    // 計算虛擬頁面號 (vpn) 和頁內偏移量 (offset)
+    // - `vpn`：虛擬頁面號，由虛擬位址除以 PageSize 得到
+    // - `offset`：頁內偏移量，虛擬位址對 PageSize 取餘數
     vpn = (unsigned)virtAddr / PageSize;
     offset = (unsigned)virtAddr % PageSize;
 
+    // 判斷是使用 TLB 還是 Page Table 來進行轉換
     if (tlb == NULL)
-    { // => page table => vpn is index into table
+    { // 使用 Page Table，vpn 作為索引
+        // 檢查 vpn 是否超出 Page Table 的大小
         if (vpn >= pageTableSize)
         {
             DEBUG(dbgAddr, "Illegal virtual page # " << virtAddr);
-            return AddressErrorException;
+            return AddressErrorException;  // 返回位址錯誤例外
         }
-        else if (!pageTable[vpn].valid)
+        else if (!pageTable[vpn].valid)  // 檢查頁面是否有效
         {
+            std::cout << "PageFaultException" << std::endl;
+            // return PageFaultException;
             /* 		Add Page fault code here		*/
+            // 若頁面無效，則表示發生頁面錯誤（未在此處實作處理）
         }
-        entry = &pageTable[vpn];
+        entry = &pageTable[vpn];  // 取得 Page Table 中該虛擬頁面的翻譯項目
     }
     else
-    {
+    { // 使用 TLB 進行查詢
+        // 遍歷 TLB，尋找對應的虛擬頁面
         for (entry = NULL, i = 0; i < TLBSize; i++)
         {
-            if (tlb[i].valid && (tlb[i].virtualPage == vpn))
+            if (tlb[i].valid && (tlb[i].virtualPage == vpn))  // 若找到有效且匹配的頁面
             {
-                entry = &tlb[i]; // FOUND!
+                entry = &tlb[i];  // 找到對應的翻譯項目
                 break;
             }
         }
+        // 如果在 TLB 中未找到對應的頁面
         if (entry == NULL)
-        { // not found
+        {
             DEBUG(dbgAddr, "Invalid TLB entry for this virtual page!");
-            return PageFaultException; // really, this is a TLB fault,
-                                       // the page may be in memory,
-                                       // but not in the TLB
+            return PageFaultException;  // 返回頁面錯誤例外（實際上為 TLB 錯誤）
+                                        // 頁面可能在記憶體中，但不在 TLB 中
         }
     }
 
-    if (entry->readOnly && writing)
-    { // trying to write to a read-only page
+    // 檢查頁面的讀寫權限
+    if (entry->readOnly && writing)  // 如果頁面為唯讀，但進行的是寫操作
+    {
         DEBUG(dbgAddr, "Write to read-only page at " << virtAddr);
-        return ReadOnlyException;
+        return ReadOnlyException;  // 返回唯讀例外
     }
-    pageFrame = entry->physicalPage;
+    pageFrame = entry->physicalPage;  // 取得頁框號
 
-    // if the pageFrame is too big, there is something really wrong!
-    // An invalid translation was loaded into the page table or TLB.
+    // 檢查頁框號是否合法（頁框號不應超出物理頁數限制）
     if (pageFrame >= NumPhysPages)
     {
         DEBUG(dbgAddr, "Illegal pageframe " << pageFrame);
-        return BusErrorException;
+        return BusErrorException;  // 返回總線錯誤例外
     }
-    entry->use = TRUE; // set the use, dirty bits
-    if (writing)
-        entry->dirty = TRUE;
 
-    *physAddr = pageFrame * PageSize + offset;
+    // 更新使用位與修改位
+    entry->use = TRUE;  // 設置該頁面的使用位為 TRUE，表示該頁面被存取
+    if (writing)        // 若為寫操作
+        entry->dirty = TRUE;  // 設置修改位為 TRUE，表示該頁面內容已被修改
+
+    // 計算物理位址
+    *physAddr = pageFrame * PageSize + offset;  // 物理位址為頁框號乘以頁面大小再加上頁內偏移量
+
+    // 驗證物理位址是否在合法範圍內
     ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
-    DEBUG(dbgAddr, "phys addr = " << *physAddr);
-    return NoException;
+    DEBUG(dbgAddr, "phys addr = " << *physAddr);  // 輸出物理位址的除錯訊息
+
+    return NoException;  // 成功完成轉換，返回 NoException
 }

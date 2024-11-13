@@ -59,6 +59,7 @@
 // WATCH OUT IF THIS ISN'T BIG ENOUGH!!!!!
 const int StackSize = (4 * 1024); // in words
 
+
 // Thread state
 enum ThreadStatus
 {
@@ -114,9 +115,13 @@ public:
     char *getName() { return (name); }
     void Print() { cout << name; }
     void SelfTest(); // test whether thread impl is working
+    int getID() { return threadID; }
 
 private:
     // some of the private data for this class is listed above
+
+    static int nextThreadID; // 用來產生thread id (pid)
+    int threadID; // 用來存放thread id (pid)
 
     int *stack; // Bottom of the stack
                 // NULL if this is the main thread
