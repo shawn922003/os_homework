@@ -88,6 +88,11 @@ enum ExceptionType
 class Instruction;
 class Interrupt;
 
+enum class SwapType {
+    FIFO,
+    LRU
+};
+
 class Machine
 {
 public:
@@ -135,6 +140,8 @@ public:
 
     TranslationEntry *pageTable;
 
+    SwapType swapType = SwapType::FIFO; // default swap type is FIFO
+    
     unsigned int pageTableSize;
     bool ReadMem(int addr, int size, int *value);
 
@@ -176,6 +183,10 @@ private:
                       // time reaches this value
 
     friend class Interrupt; // calls DelayedLoad()
+
+
+
+    int fifoSwapPage = 0;
 };
 
 extern void ExceptionHandler(ExceptionType which);

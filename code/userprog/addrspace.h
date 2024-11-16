@@ -26,6 +26,7 @@ public:
     ~AddrSpace(); // De-allocate an address space
 
     static bool usedPhyPage[NumPhysPages];
+    static TranslationEntry *usedPhyPageEntry[NumPhysPages]; // 這是全局的，用來記錄哪些physical page被誰使用了，用於之後把main memory的內容寫入disk
 
     void Execute(char *fileName); // Run the the program
                                   // stored in the file "executable"
@@ -33,11 +34,15 @@ public:
     void SaveState();    // Save/restore address space-specific
     void RestoreState(); // info on a context switch
 
-private:
+    unsigned int numPages = 0;      // Number of pages in the virtual
+                                // address space
+
     TranslationEntry *pageTable; // Assume linear page table translation (array)
-                                 // for now!
-    unsigned int numPages;       // Number of pages in the virtual
-                                 // address space
+                                // for now!
+
+private:
+
+
 
     bool Load(char *fileName); // Load the program into memory
                                // return false if not found

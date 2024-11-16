@@ -48,6 +48,18 @@ UserProgKernel::UserProgKernel(int argc, char **argv)
 			cout << "	./nachos -s : Print machine status during the machine is on." << endl;
 			cout << "	./nachos -e file1 -e file2 : executing file1 and file2." << endl;
 		}
+		else if (strcmp(argv[i], "-FIFO") == 0) // 如果輸入-FIFO，則將swapType設為FIFO
+		{
+			kernel->machine->swapType = SwapType::FIFO;
+		}
+		else if (strcmp(argv[i], "-LRU") == 0) // 如果輸入-LRU，則將swapType設為LRU
+		{
+			kernel->machine->swapType = SwapType::LRU;
+		}
+		else
+		{
+			cout << "Unknown option: " << argv[i] << endl;
+		}
 	}
 }
 
@@ -62,7 +74,7 @@ void UserProgKernel::Initialize()
 
 	machine = new Machine(debugUserProg);
 	fileSystem = new FileSystem();
-#ifdef FILESYS
+#ifdef FILESYS // 在makefile中定義了FILESYS，因此可使用SynchDisk
 	synchDisk = new SynchDisk("New SynchDisk");
 #endif // FILESYS
 }
