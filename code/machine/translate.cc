@@ -231,6 +231,7 @@ ExceptionType Machine::Translate(int virtAddr, int *physAddr, int size, bool wri
         }
         else if (!pageTable[vpn].valid)  // 檢查頁面是否有效
         {
+            kernel->stats->numPageFaults++;  // 記錄缺頁次數
             if (swapType == SwapType::FIFO) {
                 // 如果沒有空的page，則使用FIFO的方式swap page
 
@@ -273,6 +274,7 @@ ExceptionType Machine::Translate(int virtAddr, int *physAddr, int size, bool wri
             }
         }
         entry = &pageTable[vpn];  // 取得 Page Table 中該虛擬頁面的翻譯項目
+
     }
     else
     { // 使用 TLB 進行查詢
