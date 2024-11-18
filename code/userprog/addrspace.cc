@@ -121,6 +121,10 @@ bool AddrSpace::Load(char *fileName)
 
     // 計算整體的記憶體需求，包括代碼段、初始化數據段、未初始化數據段和堆疊空間
     size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + UserStackSize;
+    // cout << fileName << " size: " << size << endl;
+    // cout << "noffH.uninitData.size: " << noffH.uninitData.size << endl;
+    // cout << "noffH.initData.size: " << noffH.initData.size << endl;
+    // cout << "noffH.code.size: " << noffH.code.size << endl;
 
     // 計算所需的頁數，並將總大小對齊到頁的邊界
     numPages = divRoundUp(size, PageSize);
@@ -146,21 +150,22 @@ bool AddrSpace::Load(char *fileName)
 
     // 將每一頁的資料從緩衝區加載到主記憶體或磁碟
     for (unsigned int page = 0; page < numPages; page++) {
-        int j = 0;
+        int phyPageIndex = 0;
 
         // 找到第一個可用的物理頁框
-        while (j < NumPhysPages && AddrSpace::usedPhyPage[j] == true)
-            j++;
+        while (phyPageIndex < NumPhysPages && AddrSpace::usedPhyPage[phyPageIndex] == true)
+            phyPageIndex++;
 
-        if (j < NumPhysPages) {
+        if (phyPageIndex < NumPhysPages) {
             // 若找到可用的物理頁框，將資料從暫存緩衝區加載到主記憶體
-            memcpy(&(kernel->machine->mainMemory[j * PageSize]), tempBuffer + offset, PageSize);
+            memcpy(&(kernel->machine->mainMemory[phyPageIndex * PageSize]), tempBuffer + offset, PageSize);
 
-            AddrSpace::usedPhyPage[j] = true;             // 標記該頁框為已使用
-            AddrSpace::usedPhyPageEntry[j] = &pageTable[page]; // 記錄對應的頁表項
-            pageTable[page].physicalPage = j;             // 設定頁表的物理頁號
+            AddrSpace::usedPhyPage[phyPageIndex] = true;             // 標記該頁框為已使用
+            AddrSpace::usedPhyPageEntry[phyPageIndex] = &pageTable[page]; // 記錄對應的頁表項
+            pageTable[page].physicalPage = phyPageIndex;             // 設定頁表的物理頁號
             pageTable[page].valid = true;                 // 標記頁表的有效位
             pageTable[page].diskPage = -1;                // 表示該頁未存於磁碟
+            pageTable[page].lastUsedTime = kernel->stats->totalTicks; // 記錄最後使用時間
         } 
         else {
             // 若無可用的物理頁框，將頁面寫入交換區（swap disk）

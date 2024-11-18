@@ -207,12 +207,12 @@ ExceptionType Machine::Translate(int virtAddr, int *physAddr, int size, bool wri
     if (((size == 4) && (virtAddr & 0x3)) || ((size == 2) && (virtAddr & 0x1)))
     {
         DEBUG(dbgAddr, "Alignment problem at " << virtAddr << ", size " << size);
-        return AddressErrorException;  // 返回位址錯誤例外
+        return AddressErrorException; // 返回位址錯誤例外
     }
 
     // 系統必須有 TLB 或 Page Table，但不能同時擁有兩者。
-    ASSERT(tlb == NULL || pageTable == NULL);  // 若條件不成立會觸發 ASSERT
-    ASSERT(tlb != NULL || pageTable != NULL);  // 必須至少有 TLB 或 Page Table 其中之一
+    ASSERT(tlb == NULL || pageTable == NULL); // 若條件不成立會觸發 ASSERT
+    ASSERT(tlb != NULL || pageTable != NULL); // 必須至少有 TLB 或 Page Table 其中之一
 
     // 計算虛擬頁面號 (vpn) 和頁內偏移量 (offset)
     // - `vpn`：虛擬頁面號，由虛擬位址除以 PageSize 得到
@@ -224,64 +224,68 @@ ExceptionType Machine::Translate(int virtAddr, int *physAddr, int size, bool wri
     if (tlb == NULL)
     { // 使用 Page Table，vpn 作為索引
         // 檢查 vpn 是否超出 Page Table 的大小
+        // virtual Address Space 為 Process 自己的 Address Space，不與其他 Process 共享
         if (vpn >= pageTableSize)
         {
             DEBUG(dbgAddr, "Illegal virtual page # " << virtAddr);
-            return AddressErrorException;  // 返回位址錯誤例外
+            return AddressErrorException; // 返回位址錯誤例外
         }
-        else if (!pageTable[vpn].valid)  // 檢查頁面是否有效
+        else if (!pageTable[vpn].valid) // 檢查頁面是否有效 (是否不在記憶體中)
         {
-            if (swapType == SwapType::FIFO) {
-                // 如果沒有空的page，則使用FIFO的方式swap page
+            // if (swapType == SwapType::FIFO)
+            // {
+            //     // 如果沒有空的page，則使用FIFO的方式swap page
+            //     std::cout << "PageFaultException" << std::endl;
+            //     TranslationEntry *victimEntry = AddrSpace::usedPhyPageEntry[fifoSwapPage]; // 取得victimEntry
 
-                std::cout << "PageFaultException" << std::endl;
-                TranslationEntry *victimEntry = AddrSpace::usedPhyPageEntry[fifoSwapPage]; // 取得victimEntry
+            //     victimEntry->valid = false;                  // 把victimEntry的valid設為false，表示這個page已經被swap出去了
+            //     int swapPhyPage = victimEntry->physicalPage; // 取得victimEntry的physicalPage，這是要被swap出去的page
 
-                victimEntry->valid = false; // 把victimEntry的valid設為false，表示這個page已經被swap出去了
-                int swapPhyPage = victimEntry->physicalPage; // 取得victimEntry的physicalPage，這是要被swap出去的page
+            //     // 創建一個buffer，大小為PageSize，要把memory中的一個page存到buffer中 (存起來)
+            //     char *tempBuffer = new char[PageSize];
+            //     memcpy(tempBuffer, &(mainMemory[swapPhyPage * PageSize]), PageSize);
 
-                // 創建一個buffer，大小為PageSize，要把memory中的一個page存到buffer中
-                char *tempBuffer = new char[PageSize];
-                memcpy(tempBuffer, &(mainMemory[swapPhyPage * PageSize]), PageSize);
+            //     // 把disk中的一個page存到memory中
+            //     kernel->synchDisk->ReadSector(pageTable[vpn].diskPage, &(mainMemory[swapPhyPage * PageSize]));
 
-                // 把disk中的一個page存到memory中
-                kernel->synchDisk->ReadSector(pageTable[vpn].diskPage, &(mainMemory[swapPhyPage * PageSize]));
+            //     // 把buffer中的page存到disk中
+            //     if (victimEntry->diskPage == -1)
+            //     {
+            //         victimEntry->diskPage = kernel->synchDisk->numUsedSectors++;
+            //     }
 
-                // 把buffer中的page存到disk中
-                if (victimEntry->diskPage == -1) {
-                    victimEntry->diskPage = kernel->synchDisk->numUsedSectors++;
-                }
+            //     kernel->synchDisk->WriteSector(victimEntry->diskPage, tempBuffer);
 
-                kernel->synchDisk->WriteSector(victimEntry->diskPage, tempBuffer);
+            //     // 更新pageTable
+            //     pageTable[vpn].valid = true;
+            //     pageTable[vpn].physicalPage = swapPhyPage;
 
-                // 更新pageTable
-                pageTable[vpn].valid = true;
-                pageTable[vpn].physicalPage = swapPhyPage;
+            //     AddrSpace::usedPhyPageEntry[fifoSwapPage] = &pageTable[vpn];
 
-                 AddrSpace::usedPhyPageEntry[fifoSwapPage] = &pageTable[vpn];
+            //     // 更新kernel->currentThread->fifoSwapPage
+            //     fifoSwapPage = (fifoSwapPage + 1) % NumPhysPages;
 
-                // 更新kernel->currentThread->fifoSwapPage
-                fifoSwapPage = (fifoSwapPage + 1) % NumPhysPages;
+            //     // 釋放buffer
+            //     delete [] tempBuffer;
+            // }
+            // else if (swapType == SwapType::LRU)
+            // {
+            //     // 如果沒有空的page，則使用LRU的方式swap page
 
-                // 釋放buffer
-                delete[] tempBuffer;
-            }
-            else if (swapType == SwapType::LRU){
-                // 如果沒有空的page，則使用LRU的方式swap page
+            // }
 
-
-            }
+            swapPage(swapType, vpn);
         }
-        entry = &pageTable[vpn];  // 取得 Page Table 中該虛擬頁面的翻譯項目
+        entry = &pageTable[vpn]; // 取得 Page Table 中該虛擬頁面的翻譯項目
     }
     else
     { // 使用 TLB 進行查詢
         // 遍歷 TLB，尋找對應的虛擬頁面
         for (entry = NULL, i = 0; i < TLBSize; i++)
         {
-            if (tlb[i].valid && (tlb[i].virtualPage == vpn))  // 若找到有效且匹配的頁面
+            if (tlb[i].valid && (tlb[i].virtualPage == vpn)) // 若找到有效且匹配的頁面
             {
-                entry = &tlb[i];  // 找到對應的翻譯項目
+                entry = &tlb[i]; // 找到對應的翻譯項目
                 break;
             }
         }
@@ -289,37 +293,105 @@ ExceptionType Machine::Translate(int virtAddr, int *physAddr, int size, bool wri
         if (entry == NULL)
         {
             DEBUG(dbgAddr, "Invalid TLB entry for this virtual page!");
-            return PageFaultException;  // 返回頁面錯誤例外（實際上為 TLB 錯誤）
-                                        // 頁面可能在記憶體中，但不在 TLB 中
+            return PageFaultException; // 返回頁面錯誤例外（實際上為 TLB 錯誤）
+                                       // 頁面可能在記憶體中，但不在 TLB 中
         }
     }
 
     // 檢查頁面的讀寫權限
-    if (entry->readOnly && writing)  // 如果頁面為唯讀，但進行的是寫操作
+    if (entry->readOnly && writing) // 如果頁面為唯讀，但進行的是寫操作
     {
         DEBUG(dbgAddr, "Write to read-only page at " << virtAddr);
-        return ReadOnlyException;  // 返回唯讀例外
+        return ReadOnlyException; // 返回唯讀例外
     }
-    pageFrame = entry->physicalPage;  // 取得頁框號
 
     // 檢查頁框號是否合法（頁框號不應超出物理頁數限制）
+    pageFrame = entry->physicalPage; // 取得頁框號
     if (pageFrame >= NumPhysPages)
     {
         DEBUG(dbgAddr, "Illegal pageframe " << pageFrame);
-        return BusErrorException;  // 返回總線錯誤例外
+        return BusErrorException; // 返回總線錯誤例外
     }
 
     // 更新使用位與修改位
-    entry->use = TRUE;  // 設置該頁面的使用位為 TRUE，表示該頁面被存取
-    if (writing)        // 若為寫操作
-        entry->dirty = TRUE;  // 設置修改位為 TRUE，表示該頁面內容已被修改
+    entry->use = TRUE;       // 設置該頁面的使用位為 TRUE，表示該頁面被存取
+    entry->lastUsedTime = kernel->stats->totalTicks;
+    if (writing)             // 若為寫操作
+        entry->dirty = TRUE; // 設置修改位為 TRUE，表示該頁面內容已被修改
 
     // 計算物理位址
-    *physAddr = pageFrame * PageSize + offset;  // 物理位址為頁框號乘以頁面大小再加上頁內偏移量
+    *physAddr = pageFrame * PageSize + offset; // 物理位址為頁框號乘以頁面大小再加上頁內偏移量
 
     // 驗證物理位址是否在合法範圍內
     ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
-    DEBUG(dbgAddr, "phys addr = " << *physAddr);  // 輸出物理位址的除錯訊息
+    DEBUG(dbgAddr, "phys addr = " << *physAddr); // 輸出物理位址的除錯訊息
 
-    return NoException;  // 成功完成轉換，返回 NoException
+    return NoException; // 成功完成轉換，返回 NoException
+}
+
+void Machine::swapPage(SwapType strategy, int vpn)
+{
+    // 根據 strategy 選擇使用 FIFO 或 LRU 進行 swap page
+    // 並更新 kernel->currentThread->fifoSwapPage 或 kernel->currentThread->lruSwapPage
+    int swapPage = -1;
+    if (strategy == SwapType::FIFO)
+    {
+        // 正常狀況FIFO不會出問題 但 swap 過程失敗下次進入的話就會有問題
+        swapPage = fifoSwapPage;
+        fifoSwapPage = (fifoSwapPage + 1) % NumPhysPages;
+    }
+    else if (strategy == SwapType::LRU)
+    {
+        swapPage = calcLruPage();
+    }
+    else
+    {
+        std::cout << "Invalid swap strategy" << std::endl;
+        exit(-8877);
+    }
+
+    // 如果沒有空的page，則使用FIFO的方式swap page
+    std::cout << "PageFaultException" << std::endl;
+    std::cout << "page " << swapPage << " swapped" << std::endl;
+    TranslationEntry *victimEntry = AddrSpace::usedPhyPageEntry[swapPage]; // 取得victimEntry
+
+    victimEntry->valid = false;                  // 把victimEntry的valid設為false，表示這個page已經被swap出去了
+    int swapPhyPage = victimEntry->physicalPage; // 取得victimEntry的physicalPage，這是要被swap出去的page
+
+    // 創建一個buffer，大小為PageSize，要把memory中的一個page存到buffer中 (存起來)
+    char *tempBuffer = new char[PageSize];
+    memcpy(tempBuffer, &(mainMemory[swapPhyPage * PageSize]), PageSize);
+
+    // 把disk中的一個page存到memory中
+    kernel->synchDisk->ReadSector(pageTable[vpn].diskPage, &(mainMemory[swapPhyPage * PageSize]));
+
+    // 把buffer中的page存到disk中
+    if (victimEntry->diskPage == -1)
+    {
+        victimEntry->diskPage = kernel->synchDisk->numUsedSectors++;
+    }
+    kernel->synchDisk->WriteSector(victimEntry->diskPage, tempBuffer);
+
+    // 更新pageTable
+    pageTable[vpn].valid = true;
+    pageTable[vpn].physicalPage = swapPhyPage;
+
+    AddrSpace::usedPhyPageEntry[swapPage] = &pageTable[vpn];
+
+    // 釋放buffer
+    delete [] tempBuffer;
+}
+
+unsigned int Machine::calcLruPage() {
+    unsigned int minTime = INT_MAX;
+    unsigned int swapPage = 0;
+    for (int i = 0; i < NumPhysPages; i++)
+    {
+        if (AddrSpace::usedPhyPageEntry[i] != nullptr && AddrSpace::usedPhyPageEntry[i]->lastUsedTime < minTime)
+        {
+            minTime = AddrSpace::usedPhyPageEntry[i]->lastUsedTime;
+            swapPage = i;
+        }
+    }
+    return swapPage;
 }

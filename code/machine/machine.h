@@ -96,7 +96,7 @@ enum class SwapType {
 class Machine
 {
 public:
-    Machine(bool debug); // Initialize the simulation of the hardware
+    Machine(bool debug, SwapType type); // Initialize the simulation of the hardware
                          // for running user programs
     ~Machine(); // De-allocate the data structures
 
@@ -140,7 +140,7 @@ public:
 
     TranslationEntry *pageTable;
 
-    SwapType swapType = SwapType::FIFO; // default swap type is FIFO
+    SwapType swapType; // default swap type is FIFO
     
     unsigned int pageTableSize;
     bool ReadMem(int addr, int size, int *value);
@@ -166,6 +166,9 @@ private:
     // and return an exception code if the
     // translation couldn't be completed.
 
+    void swapPage(SwapType strategy, int vpn);
+    unsigned int calcLruPage();
+
     void RaiseException(ExceptionType which, int badVAddr);
     // Trap to the Nachos kernel, because of a
     // system call or other exception.
@@ -185,9 +188,10 @@ private:
     friend class Interrupt; // calls DelayedLoad()
 
 
-
-    int fifoSwapPage = 0;
+    unsigned int fifoSwapPage = 0;
+    // unsigned int lruSwapPage = 0; // 不需要
 };
+
 
 extern void ExceptionHandler(ExceptionType which);
 // Entry point into Nachos for handling

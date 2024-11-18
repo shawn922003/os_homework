@@ -52,10 +52,12 @@ void CheckEndian()
 //		is executed.
 //----------------------------------------------------------------------
 
-Machine::Machine(bool debug)
+Machine::Machine(bool debug, SwapType type)
 {
-    int i;
 
+    swapType = type;
+
+    int i;
     for (i = 0; i < NumTotalRegs; i++)
         registers[i] = 0;
     mainMemory = new char[MemorySize];
