@@ -10,6 +10,7 @@
 #include "synchconsole.h"
 #include "userkernel.h"
 #include "synchdisk.h"
+#include "machine.h"
 
 //----------------------------------------------------------------------
 // UserProgKernel::UserProgKernel
@@ -50,11 +51,11 @@ UserProgKernel::UserProgKernel(int argc, char **argv)
 		}
 		else if (strcmp(argv[i], "-FIFO") == 0) // 如果輸入-FIFO，則將swapType設為FIFO
 		{
-			kernel->machine->swapType = SwapType::FIFO;
+			swapType = SwapType::FIFO;
 		}
 		else if (strcmp(argv[i], "-LRU") == 0) // 如果輸入-LRU，則將swapType設為LRU
 		{
-			kernel->machine->swapType = SwapType::LRU;
+			swapType = SwapType::LRU;
 		}
 		else
 		{

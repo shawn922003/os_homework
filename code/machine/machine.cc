@@ -18,6 +18,9 @@ static char* exceptionNames[] = { "no exception", "syscall",
 				"bus error", "address error", "overflow",
 				"illegal instruction" };
 
+
+SwapType swapType = SwapType::FIFO;
+
 //----------------------------------------------------------------------
 // CheckEndian
 // 	Check to be sure that the host really uses the format it says it 

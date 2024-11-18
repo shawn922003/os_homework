@@ -93,6 +93,8 @@ enum class SwapType {
     LRU
 };
 
+extern SwapType swapType;
+
 class Machine
 {
 public:
@@ -140,7 +142,7 @@ public:
 
     TranslationEntry *pageTable;
 
-    SwapType swapType = SwapType::FIFO; // default swap type is FIFO
+
     
     unsigned int pageTableSize;
     bool ReadMem(int addr, int size, int *value);
