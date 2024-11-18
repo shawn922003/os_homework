@@ -232,48 +232,7 @@ ExceptionType Machine::Translate(int virtAddr, int *physAddr, int size, bool wri
         }
         else if (!pageTable[vpn].valid) // 檢查頁面是否有效 (是否不在記憶體中)
         {
-            // if (swapType == SwapType::FIFO)
-            // {
-            //     // 如果沒有空的page，則使用FIFO的方式swap page
-            //     std::cout << "PageFaultException" << std::endl;
-            //     TranslationEntry *victimEntry = AddrSpace::usedPhyPageEntry[fifoSwapPage]; // 取得victimEntry
-
-            //     victimEntry->valid = false;                  // 把victimEntry的valid設為false，表示這個page已經被swap出去了
-            //     int swapPhyPage = victimEntry->physicalPage; // 取得victimEntry的physicalPage，這是要被swap出去的page
-
-            //     // 創建一個buffer，大小為PageSize，要把memory中的一個page存到buffer中 (存起來)
-            //     char *tempBuffer = new char[PageSize];
-            //     memcpy(tempBuffer, &(mainMemory[swapPhyPage * PageSize]), PageSize);
-
-            //     // 把disk中的一個page存到memory中
-            //     kernel->synchDisk->ReadSector(pageTable[vpn].diskPage, &(mainMemory[swapPhyPage * PageSize]));
-
-            //     // 把buffer中的page存到disk中
-            //     if (victimEntry->diskPage == -1)
-            //     {
-            //         victimEntry->diskPage = kernel->synchDisk->numUsedSectors++;
-            //     }
-
-            //     kernel->synchDisk->WriteSector(victimEntry->diskPage, tempBuffer);
-
-            //     // 更新pageTable
-            //     pageTable[vpn].valid = true;
-            //     pageTable[vpn].physicalPage = swapPhyPage;
-
-            //     AddrSpace::usedPhyPageEntry[fifoSwapPage] = &pageTable[vpn];
-
-            //     // 更新kernel->currentThread->fifoSwapPage
-            //     fifoSwapPage = (fifoSwapPage + 1) % NumPhysPages;
-
-            //     // 釋放buffer
-            //     delete [] tempBuffer;
-            // }
-            // else if (swapType == SwapType::LRU)
-            // {
-            //     // 如果沒有空的page，則使用LRU的方式swap page
-
-            // }
-
+            // RaiseException(PageFaultException, virtAddr); // 返回頁面錯誤例外
             swapPage(swapType, vpn);
         }
         entry = &pageTable[vpn]; // 取得 Page Table 中該虛擬頁面的翻譯項目
@@ -383,13 +342,13 @@ void Machine::swapPage(SwapType strategy, int vpn)
 }
 
 unsigned int Machine::calcLruPage() {
-    unsigned int minTime = INT_MAX;
+    unsigned int leastRecentTime = INT_MAX;
     unsigned int swapPage = 0;
     for (int i = 0; i < NumPhysPages; i++)
     {
-        if (AddrSpace::usedPhyPageEntry[i] != nullptr && AddrSpace::usedPhyPageEntry[i]->lastUsedTime < minTime)
+        if (AddrSpace::usedPhyPageEntry[i] != nullptr && AddrSpace::usedPhyPageEntry[i]->lastUsedTime < leastRecentTime)
         {
-            minTime = AddrSpace::usedPhyPageEntry[i]->lastUsedTime;
+            leastRecentTime = AddrSpace::usedPhyPageEntry[i]->lastUsedTime;
             swapPage = i;
         }
     }

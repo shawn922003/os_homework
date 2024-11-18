@@ -58,32 +58,32 @@ void ExceptionHandler(ExceptionType which)
 	case SyscallException:
 		switch (type)
 		{
-			case SC_Halt:
-				DEBUG(dbgAddr, "Shutdown, initiated by user program.\n");
-				kernel->interrupt->Halt();
-				break;
-			case SC_PrintInt:
-				val = kernel->machine->ReadRegister(4);
-				cout << "Print integer:" << val << endl;
-				return;
-	/*		case SC_Exec:
-				DEBUG(dbgAddr, "Exec\n");
-				val = kernel->machine->ReadRegister(4);
-				kernel->StringCopy(tmpStr, retVal, 1024);
-				cout << "Exec: " << val << endl;
-				val = kernel->Exec(val);
-				kernel->machine->WriteRegister(2, val);
-				return;
-			*/
-			case SC_Exit:
-				DEBUG(dbgAddr, "Program exit\n");
-				val = kernel->machine->ReadRegister(4);
-				cout << "return value:" << val << endl;
-				kernel->currentThread->Finish();
-				break;
-			default:
-				cerr << "Unexpected system call " << type << "\n";
-				break;
+		case SC_Halt:
+			DEBUG(dbgAddr, "Shutdown, initiated by user program.\n");
+			kernel->interrupt->Halt();
+			break;
+		case SC_PrintInt:
+			val = kernel->machine->ReadRegister(4);
+			cout << "Print integer:" << val << endl;
+			return;
+			/*		case SC_Exec:
+						DEBUG(dbgAddr, "Exec\n");
+						val = kernel->machine->ReadRegister(4);
+						kernel->StringCopy(tmpStr, retVal, 1024);
+						cout << "Exec: " << val << endl;
+						val = kernel->Exec(val);
+						kernel->machine->WriteRegister(2, val);
+						return;
+					*/
+		case SC_Exit:
+			DEBUG(dbgAddr, "Program exit\n");
+			val = kernel->machine->ReadRegister(4);
+			cout << "return value:" << val << endl;
+			kernel->currentThread->Finish();
+			break;
+		default:
+			cerr << "Unexpected system call " << type << "\n";
+			break;
 		}
 		break;
 	case PageFaultException:

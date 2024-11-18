@@ -133,19 +133,24 @@ bool AddrSpace::Load(char *fileName)
     // 確認所需頁數不超過可用的物理頁數（這是暫時的，直到支援虛擬記憶體為止）
     ASSERT(numPages <= NumPhysPages);
 
-    DEBUG(dbgAddr, "Initializing address space: " << numPages << ", " << size);
+    DEBUG(dbgAddr, "Initializing address space. # of pages = " << numPages << ", " << size << " bytes.");
 
+    DEBUG(dbgAddr, "Loading program into memory...");
     // 為暫存緩衝區分配記憶體，用於儲存代碼和數據段
     char *tempBuffer = new char[noffH.code.size + noffH.initData.size + noffH.uninitData.size];
 
     // 將代碼段從檔案讀取到緩衝區中的指定位置
     if (noffH.code.size > 0)
         executable->ReadAt(tempBuffer + noffH.code.virtualAddr, noffH.code.size, noffH.code.inFileAddr);
-
+        DEBUG(dbgAddr, "Code segment is at: " << noffH.code.virtualAddr << " with size: " << noffH.code.size);
+    
     // 將初始化數據段從檔案讀取到緩衝區中的指定位置
     if (noffH.initData.size > 0)
         executable->ReadAt(tempBuffer + noffH.initData.virtualAddr, noffH.initData.size, noffH.initData.inFileAddr);
-
+        DEBUG(dbgAddr, "Initialized data segment is at: " << (unsigned int)noffH.initData.virtualAddr << " with size: " << noffH.initData.size);
+        // cout << (int)tempBuffer << endl;
+        // cout << (int)(tempBuffer + noffH.initData.virtualAddr) << endl;
+    
     unsigned int offset = 0; // 記錄當前加載的偏移量
 
     // 將每一頁的資料從緩衝區加載到主記憶體或磁碟
@@ -186,7 +191,7 @@ bool AddrSpace::Load(char *fileName)
     }
 
     // 釋放暫存緩衝區的記憶體
-    delete[] tempBuffer;
+    delete [] tempBuffer;
 
     // 關閉檔案以釋放資源
     delete executable;
