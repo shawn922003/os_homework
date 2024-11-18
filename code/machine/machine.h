@@ -141,6 +141,7 @@ public:
     TranslationEntry *pageTable;
 
     SwapType swapType; // default swap type is FIFO
+    void swapPage(SwapType strategy, int virtAddr);
     
     unsigned int pageTableSize;
     bool ReadMem(int addr, int size, int *value);
@@ -166,7 +167,6 @@ private:
     // and return an exception code if the
     // translation couldn't be completed.
 
-    void swapPage(SwapType strategy, int vpn);
     unsigned int calcLruPage();
 
     void RaiseException(ExceptionType which, int badVAddr);

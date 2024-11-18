@@ -3968,7 +3968,8 @@ translate.o: ../machine/translate.cc /usr/include/stdc-predef.h \
  ../lib/list.h ../lib/debug.h ../lib/list.cc ../machine/interrupt.h \
  ../machine/callback.h ../machine/stats.h ../threads/alarm.h \
  ../machine/callback.h ../machine/timer.h ../filesys/synchdisk.h \
- ../machine/disk.h ../threads/synch.h ../threads/main.h
+ ../machine/disk.h ../threads/synch.h ../threads/main.h \
+ ../machine/machine.h
 synchdisk.o: ../filesys/synchdisk.cc /usr/include/stdc-predef.h \
  ../lib/copyright.h ../filesys/synchdisk.h ../machine/disk.h \
  ../lib/utility.h ../lib/copyright.h ../machine/callback.h \

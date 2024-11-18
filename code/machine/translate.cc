@@ -31,6 +31,7 @@
 
 #include "copyright.h"
 #include "main.h"
+#include "machine.h"
 
 // Routines for converting Words and Short Words to and from the
 // simulated machine's format of little endian.  These end up
@@ -232,8 +233,8 @@ ExceptionType Machine::Translate(int virtAddr, int *physAddr, int size, bool wri
         }
         else if (!pageTable[vpn].valid) // 檢查頁面是否有效 (是否不在記憶體中)
         {
-            // RaiseException(PageFaultException, virtAddr); // 返回頁面錯誤例外
-            swapPage(swapType, vpn);
+            // `swapPage` 將被執行
+            return PageFaultException; // 返回頁面錯誤例外
         }
         entry = &pageTable[vpn]; // 取得 Page Table 中該虛擬頁面的翻譯項目
     }
@@ -288,10 +289,12 @@ ExceptionType Machine::Translate(int virtAddr, int *physAddr, int size, bool wri
     return NoException; // 成功完成轉換，返回 NoException
 }
 
-void Machine::swapPage(SwapType strategy, int vpn)
+void Machine::swapPage(SwapType strategy, int virtAddr)
 {
     // 根據 strategy 選擇使用 FIFO 或 LRU 進行 swap page
     // 並更新 kernel->currentThread->fifoSwapPage 或 kernel->currentThread->lruSwapPage
+
+    int vpn = virtAddr / PageSize;
     int swapPage = -1;
     if (strategy == SwapType::FIFO)
     {
@@ -310,8 +313,7 @@ void Machine::swapPage(SwapType strategy, int vpn)
     }
 
     // 如果沒有空的page，則使用FIFO的方式swap page
-    std::cout << "PageFaultException" << std::endl;
-    std::cout << "page " << swapPage << " swapped" << std::endl;
+    // std::cout << "PageFaultException" << std::endl;
     TranslationEntry *victimEntry = AddrSpace::usedPhyPageEntry[swapPage]; // 取得victimEntry
 
     victimEntry->valid = false;                  // 把victimEntry的valid設為false，表示這個page已經被swap出去了
@@ -336,6 +338,7 @@ void Machine::swapPage(SwapType strategy, int vpn)
     pageTable[vpn].physicalPage = swapPhyPage;
 
     AddrSpace::usedPhyPageEntry[swapPage] = &pageTable[vpn];
+    std::cout << "page " << swapPage << " swapped" << std::endl;
 
     // 釋放buffer
     delete [] tempBuffer;
@@ -344,6 +347,7 @@ void Machine::swapPage(SwapType strategy, int vpn)
 unsigned int Machine::calcLruPage() {
     unsigned int leastRecentTime = INT_MAX;
     unsigned int swapPage = 0;
+    // 預設 mainMemory 全都是有占用的因此沒有檢查是否有空的 page
     for (int i = 0; i < NumPhysPages; i++)
     {
         if (AddrSpace::usedPhyPageEntry[i] != nullptr && AddrSpace::usedPhyPageEntry[i]->lastUsedTime < leastRecentTime)

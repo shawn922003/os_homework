@@ -24,6 +24,7 @@
 #include "copyright.h"
 #include "main.h"
 #include "syscall.h"
+#include "machine.h"
 
 //----------------------------------------------------------------------
 // ExceptionHandler
@@ -52,6 +53,8 @@ void ExceptionHandler(ExceptionType which)
 {
 	int type = kernel->machine->ReadRegister(2);
 	int val;
+	int virtAddr;
+	SwapType swapType;
 
 	switch (which)
 	{
@@ -87,7 +90,12 @@ void ExceptionHandler(ExceptionType which)
 		}
 		break;
 	case PageFaultException:
-		/*    Page Fault Exception    */
+		kernel->stats->numPageFaults++;
+		cout << "page fault" << endl;
+		swapType = kernel->machine->swapType;
+		virtAddr = kernel->machine->ReadRegister(BadVAddrReg);
+		kernel->machine->swapPage(swapType, virtAddr);
+		// kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) - 4);
 		return;
 	default:
 		cerr << "Unexpected user mode exception" << which << "\n";
