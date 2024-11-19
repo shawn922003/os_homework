@@ -139,11 +139,11 @@ public:
                            // "read-only" to Nachos kernel code
 
     TranslationEntry *pageTable;
+    unsigned int pageTableSize;
 
     SwapType swapType; // default swap type is FIFO
     void swapPage(SwapType strategy, int virtAddr);
     
-    unsigned int pageTableSize;
     bool ReadMem(int addr, int size, int *value);
 
 private:

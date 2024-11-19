@@ -130,8 +130,25 @@ bool AddrSpace::Load(char *fileName)
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
 
+    if (numPages > NumPhysPages) {
+        // 原本在 AddrSpace() 的初始化在這邊重做，以適應不同大小的程式
+        delete [] pageTable;
+        pageTable = new TranslationEntry[numPages];
+        for (unsigned int i = 0; i < numPages; i++)
+        {
+            pageTable[i].virtualPage = i; // for now, virt page # = phys page #
+            pageTable[i].physicalPage = i;
+            //	pageTable[i].physicalPage = 0;
+            pageTable[i].valid = TRUE;
+            // pageTable[i].valid = FALSE;
+            pageTable[i].use = FALSE;
+            pageTable[i].dirty = FALSE;
+            pageTable[i].readOnly = FALSE;
+        }
+    }
+    
     // 確認所需頁數不超過可用的物理頁數（這是暫時的，直到支援虛擬記憶體為止）
-    ASSERT(numPages <= NumPhysPages);
+    // ASSERT(numPages <= NumPhysPages);
 
     DEBUG(dbgAddr, "Initializing address space. # of pages = " << numPages << ", " << size << " bytes.");
 
@@ -140,36 +157,44 @@ bool AddrSpace::Load(char *fileName)
     char *tempBuffer = new char[noffH.code.size + noffH.initData.size + noffH.uninitData.size];
 
     // 將代碼段從檔案讀取到緩衝區中的指定位置
-    if (noffH.code.size > 0)
+    if (noffH.code.size > 0) {
         executable->ReadAt(tempBuffer + noffH.code.virtualAddr, noffH.code.size, noffH.code.inFileAddr);
-    DEBUG(dbgAddr, "Code segment is at: " << noffH.code.virtualAddr << " with size: " << noffH.code.size);
+        DEBUG(dbgAddr, "Code segment is at: " << noffH.code.virtualAddr << " with size: " << noffH.code.size);
+    }
 
     // 將初始化數據段從檔案讀取到緩衝區中的指定位置
-    if (noffH.initData.size > 0)
+    if (noffH.initData.size > 0) {
+        DEBUG(dbgAddr, "Initialized data segment is at: " << (unsigned int)noffH.initData.virtualAddr << " with size: " << noffH.initData.size);
         executable->ReadAt(tempBuffer + noffH.initData.virtualAddr, noffH.initData.size, noffH.initData.inFileAddr);
-    DEBUG(dbgAddr, "Initialized data segment is at: " << (unsigned int)noffH.initData.virtualAddr << " with size: " << noffH.initData.size);
-    // cout << (int)tempBuffer << endl;
-    // cout << (int)(tempBuffer + noffH.initData.virtualAddr) << endl;
+        // cout << (int)tempBuffer << endl;
+        // cout << (int)(tempBuffer + noffH.initData.virtualAddr) << endl;
+    }
+
+    if (noffH.uninitData.size > 0) {
+        DEBUG(dbgAddr, "Uninitialized data segment is at: " << (unsigned int)noffH.uninitData.virtualAddr << " with size: " << noffH.uninitData.size);
+        // executable->ReadAt(tempBuffer + noffH.uninitData.virtualAddr, noffH.uninitData.size, noffH.uninitData.inFileAddr);
+    }
 
     unsigned int offset = 0; // 記錄當前加載的偏移量
 
     // 將每一頁的資料從緩衝區加載到主記憶體或磁碟
     for (unsigned int page = 0; page < numPages; page++)
     {
-        int phyPageIndex = 0;
+        // 對於此檔案以page為單位做計算
+        int filePageIndex = 0;
 
         // 找到第一個可用的物理頁框
-        while (phyPageIndex < NumPhysPages && AddrSpace::usedPhyPage[phyPageIndex] == true)
-            phyPageIndex++;
+        while (filePageIndex < NumPhysPages && AddrSpace::usedPhyPage[filePageIndex] == true)
+            filePageIndex++;
 
-        if (phyPageIndex < NumPhysPages)
+        if (filePageIndex < NumPhysPages)
         {
             // 若找到可用的物理頁框，將資料從暫存緩衝區加載到主記憶體
-            memcpy(&(kernel->machine->mainMemory[phyPageIndex * PageSize]), tempBuffer + offset, PageSize);
+            memcpy(&(kernel->machine->mainMemory[filePageIndex * PageSize]), tempBuffer + offset, PageSize);
 
-            AddrSpace::usedPhyPage[phyPageIndex] = true;                  // 標記該頁框為已使用
-            AddrSpace::usedPhyPageEntry[phyPageIndex] = &pageTable[page]; // 記錄對應的頁表項
-            pageTable[page].physicalPage = phyPageIndex;                  // 設定頁表的物理頁號
+            AddrSpace::usedPhyPage[filePageIndex] = true;                  // 標記該頁框為已使用
+            AddrSpace::usedPhyPageEntry[filePageIndex] = &pageTable[page]; // 記錄對應的頁表項
+            pageTable[page].physicalPage = filePageIndex;                  // 設定頁表的物理頁號
             pageTable[page].valid = true;                                 // 標記頁表的有效位
             pageTable[page].diskPage = -1;                                // 表示該頁於磁碟的位置未定
             pageTable[page].lastUsedTime = kernel->stats->totalTicks;     // 設定初始值
@@ -178,8 +203,16 @@ bool AddrSpace::Load(char *fileName)
         {
             // 若無可用的物理頁框，將頁面寫入交換區（swap disk）
             int diskSector = kernel->synchDisk->numUsedSectors++;
+            
+            TranslationEntry* tmp = pageTable;
+            DEBUG(dbgAddr, "Before WriteSector: pageTable = " << pageTable);
             kernel->synchDisk->WriteSector(diskSector, tempBuffer + offset);
+            DEBUG(dbgAddr, "After WriteSector: pageTable = " << pageTable);
+            DEBUG(dbgAddr, "Before == After : " << (pageTable == tmp));
+            // 暫時解法
+            // pageTable = tmp;
 
+            // 這邊會 Segmentation fault
             pageTable[page].diskPage = diskSector; // 紀錄該頁在磁碟的區段編號
             pageTable[page].valid = false;         // 標記頁表的有效位為假
         }
@@ -271,8 +304,15 @@ void AddrSpace::InitRegisters()
 
 void AddrSpace::SaveState()
 {
-    pageTable = kernel->machine->pageTable;
-    numPages = kernel->machine->pageTableSize;
+    // 其實可以全都不用做?
+    if (kernel->machine->pageTable == nullptr) {
+        kernel->machine->pageTable = pageTable;
+        kernel->machine->pageTableSize = numPages;
+    }
+    else {
+        pageTable = kernel->machine->pageTable;
+        numPages = kernel->machine->pageTableSize;
+    }
 }
 
 //----------------------------------------------------------------------
