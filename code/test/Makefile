@@ -33,7 +33,7 @@ CPP = /lib/cpp
 INCDIR =-I../userprog -I../threads -I../lib
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt shell matmult sort test1 test2 test3 testLargeArray
+all: halt shell matmult sort test1 test2 test3 testLargeArray testArrayRandomAccess
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -76,3 +76,6 @@ test3: test3.o start.o
 testLargeArray: testLargeArray.o start.o
 	$(LD) $(LDFLAGS) start.o testLargeArray.o -o testLargeArray.coff
 	../bin/coff2noff testLargeArray.coff testLargeArray
+testArrayRandomAccess: testArrayRandomAccess.o start.o
+	$(LD) $(LDFLAGS) start.o testArrayRandomAccess.o -o testArrayRandomAccess.coff
+	../bin/coff2noff testArrayRandomAccess.coff testArrayRandomAccess

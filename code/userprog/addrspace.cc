@@ -304,7 +304,7 @@ void AddrSpace::InitRegisters()
 
 void AddrSpace::SaveState()
 {
-    // 其實可以全都不用做?
+    // 可以全都不做?
     if (kernel->machine->pageTable == nullptr) {
         kernel->machine->pageTable = pageTable;
         kernel->machine->pageTableSize = numPages;

@@ -292,18 +292,19 @@ ExceptionType Machine::Translate(int virtAddr, int *physAddr, int size, bool wri
 void Machine::swapPage(SwapType strategy, int virtAddr)
 {
     // 根據 strategy 選擇使用 FIFO 或 LRU 進行 swap page
-    // 並更新 kernel->currentThread->fifoSwapPage 或 kernel->currentThread->lruSwapPage
 
     int vpn = virtAddr / PageSize;
     int swapPage = -1;
     if (strategy == SwapType::FIFO)
     {
-        // 正常狀況FIFO不會出問題 但 swap 過程失敗下次進入的話就會有問題
+        // 正常狀況 FIFO 不會出問題 但 swap 過程失敗會讓策略非完全的 FIFO
         swapPage = fifoSwapPage;
+        // 更新 kernel->currentThread->fifoSwapPage
         fifoSwapPage = (fifoSwapPage + 1) % NumPhysPages;
     }
     else if (strategy == SwapType::LRU)
     {
+        // 找尋最久未使用的 page
         swapPage = calcLruPage();
     }
     else
@@ -312,35 +313,34 @@ void Machine::swapPage(SwapType strategy, int virtAddr)
         exit(-8877);
     }
 
-    // 如果沒有空的page，則使用FIFO的方式swap page
     // std::cout << "PageFaultException" << std::endl;
-    TranslationEntry *victimEntry = AddrSpace::usedPhyPageEntry[swapPage]; // 取得victimEntry
+    TranslationEntry *victimEntry = AddrSpace::usedPhyPageEntry[swapPage]; // 取得 victimEntry
 
-    victimEntry->valid = false;                  // 把victimEntry的valid設為false，表示這個page已經被swap出去了
-    int swapPhyPage = victimEntry->physicalPage; // 取得victimEntry的physicalPage，這是要被swap出去的page
+    victimEntry->valid = false;                  // 把 victimEntry 的 valid 設為 false，表示這個 page 已經被 swap 出去了
+    int swapPhyPage = victimEntry->physicalPage; // 取得 victimEntry 的 physicalPage，這是要被 swap 出去的 page
 
-    // 創建一個buffer，大小為PageSize，要把memory中的一個page存到buffer中 (存起來)
+    // 創建一個 buffer，大小為 PageSize，要把 memory 中的一個 page 存到 buffer 中 (存起來)
     char *tempBuffer = new char[PageSize];
     memcpy(tempBuffer, &(mainMemory[swapPhyPage * PageSize]), PageSize);
 
-    // 把disk中的一個page存到memory中
+    // 把 disk 中的一個 page 存到 memory 中
     kernel->synchDisk->ReadSector(pageTable[vpn].diskPage, &(mainMemory[swapPhyPage * PageSize]));
 
-    // 把buffer中的page存到disk中
+    // 把 buffer 中的 page 存到 disk 中
     if (victimEntry->diskPage == -1)
     {
         victimEntry->diskPage = kernel->synchDisk->numUsedSectors++;
     }
     kernel->synchDisk->WriteSector(victimEntry->diskPage, tempBuffer);
 
-    // 更新pageTable
+    // 更新 pageTable
     pageTable[vpn].valid = true;
     pageTable[vpn].physicalPage = swapPhyPage;
 
     AddrSpace::usedPhyPageEntry[swapPage] = &pageTable[vpn];
     std::cout << "page " << swapPage << " swapped" << std::endl;
 
-    // 釋放buffer
+    // 釋放 buffer
     delete [] tempBuffer;
 }
 

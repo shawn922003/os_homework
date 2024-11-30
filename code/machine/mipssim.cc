@@ -625,12 +625,12 @@ void Machine::DelayedLoad(int nextReg, int nextValue)
 void Instruction::Decode()
 {
 	OpInfo *opPtr;
-
 	rs = (value >> 21) & 0x1f;
 	rt = (value >> 16) & 0x1f;
 	rd = (value >> 11) & 0x1f;
 	opPtr = &opTable[(value >> 26) & 0x3f];
 	opCode = opPtr->opCode;
+	// DEBUG(dbgMach, "Decoding instruction: " << value);
 	if (opPtr->format == IFMT)
 	{
 		extra = value & 0xffff;
