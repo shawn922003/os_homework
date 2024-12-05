@@ -22,3 +22,10 @@ coff2noff
 
 # VSCode related
 .vscode
+
+*.cmd
+*.mod*
+*.ko
+*.symvers
+*.order
+
