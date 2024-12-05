@@ -44,6 +44,7 @@ private:
     Thread *t[10];
     char *execfile[10];
     int execfileNum;
+    SwapType swapType;
 };
 
 #endif // USERKERNEL_H

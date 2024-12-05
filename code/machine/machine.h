@@ -98,7 +98,7 @@ extern SwapType swapType;
 class Machine
 {
 public:
-    Machine(bool debug); // Initialize the simulation of the hardware
+    Machine(bool debug, SwapType type); // Initialize the simulation of the hardware
                          // for running user programs
     ~Machine(); // De-allocate the data structures
 
@@ -141,10 +141,11 @@ public:
                            // "read-only" to Nachos kernel code
 
     TranslationEntry *pageTable;
-
-
-    
     unsigned int pageTableSize;
+
+    SwapType swapType; // default swap type is FIFO
+    void swapPage(SwapType strategy, int virtAddr);
+    
     bool ReadMem(int addr, int size, int *value);
 
 private:
@@ -168,6 +169,8 @@ private:
     // and return an exception code if the
     // translation couldn't be completed.
 
+    unsigned int calcLruPage();
+
     void RaiseException(ExceptionType which, int badVAddr);
     // Trap to the Nachos kernel, because of a
     // system call or other exception.
@@ -187,9 +190,10 @@ private:
     friend class Interrupt; // calls DelayedLoad()
 
 
-
-    int fifoSwapPage = 0;
+    unsigned int fifoSwapPage = 0;
+    // unsigned int lruSwapPage = 0; // 不需要
 };
+
 
 extern void ExceptionHandler(ExceptionType which);
 // Entry point into Nachos for handling

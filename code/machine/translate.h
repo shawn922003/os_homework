@@ -20,7 +20,7 @@
 
 #include "copyright.h"
 #include "utility.h"
-#include "machine.h"
+#include <limits.h>
 
 // The following class defines an entry in a translation table -- either
 // in a page table or a TLB.  Each entry defines a mapping from one
@@ -36,13 +36,15 @@ public:
                                //  start of "mainMemory"
     unsigned int diskPage;     // The page number in disk memory (relative to the
                                //  start of "disk")
-
+    
     bool valid;                // If this bit is set, the translation is ignored.
                                // (In other words, the entry hasn't been initialized.)
     bool readOnly;             // If this bit is set, the user program is not allowed
                                // to modify the contents of the page.
     bool use;                  // This bit is set by the hardware every time the
                                // page is referenced or modified.
+    unsigned int lastUsedTime; // for LRU strategy
+    
     bool dirty;                // This bit is set by the hardware every time the
                                // page is modified.
 };

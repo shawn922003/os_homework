@@ -24,8 +24,10 @@ class AddrSpace
 public:
     AddrSpace();  // Create an address space.
     ~AddrSpace(); // De-allocate an address space
-
+    
+    // 紀錄主記憶體中的Page是否已被使用
     static bool usedPhyPage[NumPhysPages];
+    // 紀錄主記憶體中的Page被誰使用了
     static TranslationEntry *usedPhyPageEntry[NumPhysPages]; // 這是全局的，用來記錄哪些physical page被誰使用了，用於之後把main memory的內容寫入disk
 
     void Execute(char *fileName); // Run the the program

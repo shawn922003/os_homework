@@ -40,7 +40,7 @@ class Scheduler {
     					// running needs to be deleted
 	void Print();			// Print contents of ready list
     	
-    	void setSchedulerType(SchedulerType t) {schedulerType = t;}
+    void setSchedulerType(SchedulerType t) {schedulerType = t;}
 	SchedulerType getSchedulerType() {return schedulerType;}
 
     // SelfTest for scheduler is implemented in class Thread
