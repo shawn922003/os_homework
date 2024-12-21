@@ -28,4 +28,5 @@ coff2noff
 *.ko
 *.symvers
 *.order
-
+*count
+*_src
